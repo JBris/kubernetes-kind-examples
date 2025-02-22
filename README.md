@@ -20,7 +20,7 @@ Local testing environment for Kubernetes using Kind with Helm, the Argo ecosyste
 - [Argo Rollouts with NGINX](#argo-rollouts-with-nginx)
 - [Test ML stack](#test-ml-stack)
 - [Volcano](#volcano)
-- [Kubeflow](#kubeflow)
+- [KubeRay](#kuberay)
   
 # kubectl 
 
@@ -433,9 +433,9 @@ kubectl get podgroup
 kubectl get queue test -oyaml
 ```
 
-# Kubeflow
+# KubeRay
 
-Add Kubeflow:
+Add KubeRay:
 
 ```
 helm repo update
