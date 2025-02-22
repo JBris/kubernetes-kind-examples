@@ -44,6 +44,6 @@ spec:
               value: user
             - name: MINIO_ROOT_PASSWORD
               value: password
-            # - name: MINIO_STORAGE_USE_HTTPS
-            #   value: "False"
+            - name: MINIO_STORAGE_USE_HTTPS
+              value: "False"
       restartPolicy: Always
