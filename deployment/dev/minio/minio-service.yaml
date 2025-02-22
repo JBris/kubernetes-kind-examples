@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio-dev
+  namespace: default
+  labels:
+    app: minio-dev
+spec:
+  selector:
+    app: minio-dev
+  type: LoadBalancer
+  ports:
+    - name: port-9000
+      protocol: TCP
+      port: 9000
+      targetPort: 9000
+    - name: port-9001
+      protocol: TCP
+      port: 9001
+      targetPort: 9001
+    - name: port-1025
+      protocol: TCP
+      port: 1025
+      targetPort: 1025
+    - name: port-8025
+      protocol: TCP
+      port: 8025
+      targetPort: 8025
