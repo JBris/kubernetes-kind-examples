@@ -24,13 +24,16 @@ spec:
           command: ["/opt/prefect/entrypoint.sh", "prefect", "server", "start"]
           env:
             - name: PREFECT_UI_URL
-              value: https://prefect-k8s.sandbox.k8s.dev.pfr.co.nz/api
+              value: https://prefect.localdev.me/api
             - name: PREFECT_API_URL
-              value: https://prefect-k8s.sandbox.k8s.dev.pfr.co.nz/api
+              value: https://prefect.localdev.me/api
             - name: PREFECT_SERVER_API_HOST
               value: 0.0.0.0
             - name: PREFECT_API_DATABASE_CONNECTION_URL
               value: postgresql+asyncpg://user:password@ml-dev:5432/prefect
+          volumeMounts:
+            - mountPath: /root/.prefect
+              name: vol-ml-prefect
         - image: postgres:15.3-bullseye
           imagePullPolicy: Always
           name: postgres
@@ -75,3 +78,7 @@ spec:
             - name: MINIO_BROWSER_REDIRECT_URL
               value: http://127.0.0.1:9001
       restartPolicy: Always
+      volumes:
+        - name: vol-ml-prefect
+          persistentVolumeClaim:
+            claimName: vol-ml-prefect
