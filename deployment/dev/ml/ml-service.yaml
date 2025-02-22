@@ -1,15 +1,27 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: minio-dev
+  name: ml-dev
   namespace: default
   labels:
-    app: minio-dev
+    app: ml-dev
 spec:
   selector:
-    app: minio-dev
+    app: ml-dev
   type: LoadBalancer
   ports:
+    - name: port-4200
+      protocol: TCP
+      port: 4200
+      targetPort: 4200
+    - name: port-5432
+      protocol: TCP
+      port: 5432
+      targetPort: 5432
+    - name: port-8978
+      protocol: TCP
+      port: 8978
+      targetPort: 8978
     - name: port-9000
       protocol: TCP
       port: 9000

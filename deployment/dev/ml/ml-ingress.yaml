@@ -1,0 +1,68 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ml-dev
+  namespace: default
+  annotations:
+    cert-manager.io/issuer: letsencrypt-staging
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: minio.localdev.me
+    http:
+      paths:
+      - backend:
+          service:
+            name: ml-dev
+            port:
+              name: port-9000
+        path: /
+        pathType: Prefix
+  - host: minio-api.localdev.me
+    http:
+      paths:
+      - backend:
+          service:
+            name: ml-dev
+            port:
+              name: port-9001
+        path: /
+        pathType: Prefix
+  - host: mailhog.localdev.me
+    http:
+      paths:
+      - backend:
+          service:
+            name: ml-dev
+            port:
+              name: port-8025
+        path: /
+        pathType: Prefix
+  - host: prefect.localdev.me
+    http:
+      paths:
+      - backend:
+          service:
+            name: ml-dev
+            port:
+              name: port-4200
+        path: /
+        pathType: Prefix
+  - host: cloudbeaver.localdev.me
+    http:
+      paths:
+      - backend:
+          service:
+            name: ml-dev
+            port:
+              name: port-8978
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - 'minio.localdev.me'
+    - 'minio-api.localdev.me'
+    - 'mailhog.localdev.me'
+    - 'prefect.localdev.me'
+    - 'cloudbeaver.localdev.me'
+    secretName: ml-dev-tls-secret

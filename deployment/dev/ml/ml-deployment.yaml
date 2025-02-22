@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-dev
+  namespace: default
+  labels:
+    app: ml-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ml-dev
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: ml-dev
+    spec:
+      containers:
+        - image: prefecthq/prefect:2.15.0-python3.10
+          imagePullPolicy: Always
+          name: prefect-server
+          command: ["/opt/prefect/entrypoint.sh", "prefect", "server", "start"]
+          env:
+            - name: PREFECT_UI_URL
+              value: https://prefect-k8s.sandbox.k8s.dev.pfr.co.nz/api
+            - name: PREFECT_API_URL
+              value: https://prefect-k8s.sandbox.k8s.dev.pfr.co.nz/api
+            - name: PREFECT_SERVER_API_HOST
+              value: 0.0.0.0
+            - name: PREFECT_API_DATABASE_CONNECTION_URL
+              value: postgresql+asyncpg://user:password@ml-dev:5432/prefect
+        - image: postgres:15.3-bullseye
+          imagePullPolicy: Always
+          name: postgres
+          env:
+            - name: POSTGRES_USER
+              value: user
+            - name: POSTGRES_PASSWORD
+              value: password
+            - name: POSTGRES_DB
+              value: prefect
+        - image: dbeaver/cloudbeaver:23.3.1
+          imagePullPolicy: Always
+          name: cloudbeaver
+        - image: mailhog/mailhog:v1.0.1
+          imagePullPolicy: Always
+          name: mailhog  
+        - image: minio/minio:RELEASE.2024-10-29T16-01-48Z
+          imagePullPolicy: Always
+          name: minio  
+          workingDir: /data
+          ports:
+            - containerPort: 9001
+            - containerPort: 9000
+          args:
+            - server
+            - --console-address
+            - :9001
+            - --address
+            - :9000
+            - /data
+          env:
+            - name: MINIO_ACCESS_KEY
+              value: user
+            - name: MINIO_SECRET_KEY
+              value: password
+            - name: MINIO_ROOT_USER
+              value: user
+            - name: MINIO_ROOT_PASSWORD
+              value: password
+            - name: MINIO_STORAGE_USE_HTTPS
+              value: "False"
+            - name: MINIO_BROWSER_REDIRECT_URL
+              value: http://127.0.0.1:9001
+      restartPolicy: Always

@@ -12,6 +12,7 @@ GitOps test deployment of OpenMetadata via Helm and ArgoCD
   - [Install kind](#install-kind)
   - [Install ArgoCD](#install-argocd)
   - [Install NGINX Ingress Operator](#install-nginx-ingress-operator)
+  - [Install Cert Manager](#install-cert-manager)
   - [Test MinIO](#test-minio)
   
 # Installation
@@ -130,7 +131,7 @@ kubectl -n ingress-nginx get pod -o yaml
 
 Get pods in ingress-inginx namespace:
 
-````
+```
 kubectl get pods --namespace=ingress-nginx
 ```
 
@@ -160,5 +161,56 @@ Access localhost:8080
 curl --resolve demo.localdev.me:8080:127.0.0.1 http://demo.localdev.me:8080
 ```
 
+## Install Cert Manager
+
+Add Cert Manager:
+
+```
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.17.0/cert-manager.yaml
+```
+
+Add LetsEncrypt staging:
+
+```
+kubectl apply -f deployment/dev/certs/staging-issuer.yaml 
+kubectl get issuer
+```
+
+Add kuard test service, deployment, and ingress:
+
+```
+kubectl delete deployment kuard
+kubectl delete service kuard
+kubectl delete ingress kuard
+
+kubectl apply -f deployment/dev/kuard/kuard-deployment.yaml 
+kubectl apply -f deployment/dev/kuard/kuard-service.yaml
+kubectl apply -f deployment/dev/kuard/kuard-ingress.yaml
+
+kubectl port-forward -n default service/kuard 9500:80
+```
+
+Ping the endpoint:
+
+```
+curl --resolve kuard.localdev.me:9500:127.0.0.1 http://kuard.localdev.me:9500
+```
+
 ## Test MinIO
+
+```
+kubectl delete deployment ml-dev
+kubectl delete service ml-dev
+kubectl delete ingress ml-dev
+
+kubectl apply -f deployment/dev/ml/ml-deployment.yaml 
+kubectl apply -f deployment/dev/ml/ml-service.yaml
+kubectl apply -f deployment/dev/ml/ml-ingress.yaml
+
+kubectl port-forward -n default service/ml-dev 8025:8025 9001:9001 9000:9000 8978:8978 4200:4200 5432:5432
+```
+
+curl --resolve minio.localdev.me:8025:127.0.0.1 minio.localdev.me:8025
+
+
 
