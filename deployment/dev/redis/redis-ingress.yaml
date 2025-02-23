@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: redis
+  namespace: default
+  annotations:  
+    cert-manager.io/issuer: letsencrypt-staging
+    nginx.ingress.kubernetes.io/ssl-passthrough: 'true'
+    nginx.ingress.kubernetes.io/proxy-body-size: 200M
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+      - redis.localdev.me
+      secretName: redis-tls-secret
+  rules:
+    - host: redis.localdev.me
+      http:
+        paths:
+          - path: "/"
+            pathType: Prefix
+            backend:
+              service:
+                name: redis-service
+                port:
+                  number: 6379

@@ -23,6 +23,7 @@ Local testing environment for Kubernetes using Kind with Helm, the Argo ecosyste
 - [Volcano](#volcano)
 - [KubeRay](#kuberay)
 - [Tekton](#tekton)
+- [Redis](#redis)
   
 # kubectl 
 
@@ -551,4 +552,16 @@ curl -v \
    http://localhost:8080
 
 kubectl get pipelineruns
+```
+
+# Redis
+
+Add Redis
+
+```
+kubectl apply -f deployment/dev/redis/redis-deployment.yaml 
+kubectl apply -f deployment/dev/redis/redis-service.yaml 
+kubectl apply -f deployment/dev/redis/redis-ingress.yaml
+
+kubectl port-forward service/redis 6379
 ```
