@@ -1,14 +1,15 @@
-# Kubernetes Kind Local Environment 
+# Kubernetes Kind Examples
 
 Local testing environment for Kubernetes using Kind with Helm, the Argo ecosystem, and others installed.
 
 # Table of contents
 
-- [Kubernetes Kind Local Environment](#kubernetes-kind-local-environment)
+- [Kubernetes Kind Examples](#kubernetes-kind-examples)
 - [Table of contents](#table-of-contents)
 - [kubectl](#kubectl)
 - [helm](#helm)
 - [kind](#kind)
+- [k9s](#k9s)
 - [Add storage classes](#add-storage-classes)
 - [Sealed Secrets](#sealed-secrets)
 - [ArgoCD](#argocd)
@@ -21,6 +22,7 @@ Local testing environment for Kubernetes using Kind with Helm, the Argo ecosyste
 - [Test ML stack](#test-ml-stack)
 - [Volcano](#volcano)
 - [KubeRay](#kuberay)
+- [Tekton](#tekton)
   
 # kubectl 
 
@@ -81,6 +83,19 @@ List clusters:
 
 ```
 kind get clusters
+```
+
+# k9s
+
+Add k9s:
+
+```
+wget https://github.com/derailed/k9s/releases/download/v0.32.7/k9s_linux_amd64.deb 
+sudo apt install ./k9s_linux_amd64.deb 
+rm k9s_linux_amd64.deb
+
+k9s help
+k9s -n default
 ```
 
 # Add storage classes
@@ -478,4 +493,62 @@ Use KubeRay with Modin:
 kubectl apply -f https://raw.githubusercontent.com/ray-project/kuberay/master/ray-operator/config/samples/ray-job.modin.yaml
 
 kubectl logs -l=job-name=rayjob-sample
+```
+
+# Tekton
+
+Add Tekton
+
+```
+kubectl apply -f https://storage.googleapis.com/tekton-releases/operator/latest/release.yaml
+kubectl get pods --namespace tekton-pipelines  
+
+# Install CLI
+sudo apt update;sudo apt install -y gnupg
+sudo mkdir -p /etc/apt/keyrings/
+sudo gpg --no-default-keyring --keyring /etc/apt/keyrings/tektoncd.gpg --keyserver keyserver.ubuntu.com --recv-keys 3EFE0E0A2F2F60AA
+echo "deb [signed-by=/etc/apt/keyrings/tektoncd.gpg] http://ppa.launchpad.net/tektoncd/cli/ubuntu eoan main"|sudo tee /etc/apt/sources.list.d/tektoncd-ubuntu-cli.list
+sudo apt update && sudo apt install -y tektoncd-cli
+```
+
+Create task:
+
+```
+kubectl apply -f deployment/dev/tekton/hello-world.yaml
+kubectl apply -f deployment/dev/tekton/hello-world-run.yaml
+
+kubectl get taskrun hello-task-run --watch
+kubectl logs --selector=tekton.dev/taskRun=hello-task-run
+```
+
+Create a second task, and then create a pipeline:
+
+```
+kubectl apply -f deployment/dev/tekton/goodbye-world.yaml
+kubectl apply -f deployment/dev/tekton/hello-goodbye-pipeline.yaml
+kubectl apply -f deployment/dev/tekton/hello-goodbye-pipeline-run.yaml
+
+kubectl logs --selector=tekton.dev/pipelineRun=hello-goodbye-run
+```
+
+Add triggers:
+
+```
+kubectl apply -f deployment/dev/tekton/trigger-template.yaml
+kubectl apply -f deployment/dev/tekton/trigger-binding.yaml 
+kubectl apply -f deployment/dev/tekton/event-listener.yaml 
+kubectl apply -f deployment/dev/tekton/rbac.yaml
+
+kubectl port-forward service/el-hello-listener 8080
+```
+
+Trigger run:
+
+```
+curl -v \
+   -H 'content-Type: application/json' \
+   -d '{"username": "Tekton"}' \
+   http://localhost:8080
+
+kubectl get pipelineruns
 ```
