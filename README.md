@@ -28,6 +28,11 @@ Local testing environment for Kubernetes using Kind with Helm, the Argo ecosyste
   - [Quickstart](#quickstart)
   - [End to end](#end-to-end)
   - [Send Review Comment to Broker](#send-review-comment-to-broker)
+- [Kubeflow](#kubeflow)
+  - [Standalone Installation](#standalone-installation)
+  - [KServe Installation](#kserve-installation)
+    - [Secure InferenceService with ServiceMesh](#secure-inferenceservice-with-servicemesh)
+    - [KServe test run](#kserve-test-run)
   
 # kubectl 
 
@@ -711,7 +716,7 @@ kubectl apply -f deployment/dev/knative/200-broker.yaml
 kubectl get brokers
 kubectl describe broker bookstore-broker
 
-kubectl apply -f deployment/dev/knative/300-sinkbinding.
+kubectl apply -f deployment/dev/knative/300-sinkbinding.yaml
 kubectl get sinkbindings
 
 kubectl apply -f deployment/dev/knative/100-event-display.yaml
@@ -757,4 +762,117 @@ Create a database:
 cd docs/code-samples/eventing/bookstore-sample-app/start
 kubectl apply -f db-service
 kubectl get pods
+```
+
+# Kubeflow
+
+## Standalone Installation
+
+Add Kubeflow
+
+```
+# Pipelines
+export PIPELINE_VERSION=2.3.0
+kubectl apply -k "github.com/kubeflow/pipelines/manifests/kustomize/cluster-scoped-resources?ref=$PIPELINE_VERSION"
+kubectl wait --for condition=established --timeout=60s crd/applications.app.k8s.io
+kubectl apply -k "github.com/kubeflow/pipelines/manifests/kustomize/env/dev?ref=$PIPELINE_VERSION"
+
+kubectl port-forward -n kubeflow svc/ml-pipeline-ui 8080:80
+
+# Trainer
+kubectl apply --server-side -k "https://github.com/kubeflow/trainer.git/manifests/overlays/manager?ref=master"
+kubectl get pods -n kubeflow-system
+kubectl apply --server-side -k "https://github.com/kubeflow/trainer.git/manifests/overlays/runtimes?ref=master"
+
+# Katib
+kubectl apply -k "github.com/kubeflow/katib.git/manifests/v1beta1/installs/katib-standalone?ref=v0.17.0"
+kubectl apply -k "github.com/kubeflow/katib.git/manifests/v1beta1/installs/katib-standalone?ref=master"
+
+# Model registry
+MODEL_REGISTRY_VERSION=0.2.12
+kubectl apply -k "https://github.com/kubeflow/model-registry/manifests/kustomize/options/csi?ref=v${MODEL_REGISTRY_VERSION}"
+# Istio 
+# kubectl apply -k "https://github.com/kubeflow/model-registry/manifests/kustomize/options/istio?ref=v${MODEL_REGISTRY_VERSION}"
+kubectl wait --for=condition=available -n kubeflow deployment/model-registry-deployment --timeout=1m
+kubectl port-forward svc/model-registry-service -n kubeflow 8081:8080
+# in another terminal:
+curl -X 'GET' \
+  'http://localhost:8081/api/model_registry/v1alpha3/registered_models?pageSize=100&orderBy=ID&sortOrder=DESC' \
+  -H 'accept: application/json' | jq
+```
+
+## KServe Installation
+
+Add KServe
+
+```
+# Knative (if not installed already)
+kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.17.0/serving-crds.yaml
+kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.17.0/serving-core.yaml
+
+# Istio
+kubectl apply -l knative.dev/crd-install=true -f https://github.com/knative/net-istio/releases/download/knative-v1.17.0/istio.yaml
+kubectl apply -f https://github.com/knative/net-istio/releases/download/knative-v1.17.0/istio.yaml
+kubectl apply -f https://github.com/knative/net-istio/releases/download/knative-v1.17.0/net-istio.yaml
+kubectl label namespace knative-serving istio-injection=enabled
+kubectl apply -f deployment/dev/knative/auth.yaml 
+kubectl --namespace istio-system get service istio-ingressgateway
+
+kubectl get pods -n knative-serving
+
+# No DNS config (for dev environment)
+kubectl patch configmap/config-domain \
+      --namespace knative-serving \
+      --type merge \
+      --patch '{"data":{"example.com":""}}'
+
+# Cert Manager (if not installed already)
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.17.0/cert-manager.yaml
+kubectl apply -f deployment/dev/certs/staging-issuer.yaml 
+kubectl apply --server-side -f https://github.com/kserve/kserve/releases/download/v0.14.1/kserve.yaml
+kubectl apply --server-side -f https://github.com/kserve/kserve/releases/download/v0.14.1/kserve-cluster-resources.yaml
+```
+
+### Secure InferenceService with ServiceMesh
+
+```
+kubectl create namespace user1
+kubectl apply -f deployment/dev/kubeflow/peer-auth.yaml 
+
+kubectl edit configmap/inferenceservice-config --namespace kserve
+
+# ingress : |- {
+#    "disableIstioVirtualHost": true # Add this flag to ingress section
+# }
+
+kubectl apply -f deployment/dev/kubeflow/gateway-patch.yaml
+# Sidecar injection
+kubectl label namespace user1 istio-injection=enabled --overwrite
+
+# Add inference service
+kubectl apply -f deployment/dev/kubeflow/sklearn-inference.yaml
+
+# Make inference
+kubectl apply -f deployment/dev/kubeflow/httpbin.yaml
+
+kubectl get pod -n user1
+kubectl exec -it httpbin-b56d8fdf-ss489 -c istio-proxy -n user1 -- curl -v sklearn-iris-predictor-default.user1.svc.cluster.local/v1/models/sklearn-iris # The podname will be different from httpbin-6484879498-qxqj8
+kubectl exec -it httpbin-6484879498-qxqj8 -c istio-proxy -n user1 -- curl -v sklearn-iris-burst-predictor-default.user1.svc.cluster.local/v1/models/sklearn-iris-burst # The podname will be different from httpbin-6484879498-qxqj8
+```
+
+### KServe test run
+
+Perform test run:
+
+```
+kubectl create namespace kserve-test
+kubectl apply -f deployment/dev/kubeflow/sklearn-inference-test.yaml 
+
+kubectl get inferenceservices sklearn-iris -n kserve-test
+kubectl get svc istio-ingressgateway -n istio-system
+
+# Port forwarding for testing
+export INGRESS_HOST=worker-node-address # Change me based off external IP from above command
+INGRESS_GATEWAY_SERVICE=$(kubectl get svc --namespace istio-system --selector="app=istio-ingressgateway" --output jsonpath='{.items[0].metadata.name}')
+kubectl port-forward --namespace istio-system svc/${INGRESS_GATEWAY_SERVICE} 8080:80
 ```
