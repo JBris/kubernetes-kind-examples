@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+ name: config-network
+ namespace: knative-serving
+data:
+  rollout-duration: 380s

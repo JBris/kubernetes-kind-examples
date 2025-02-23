@@ -24,6 +24,10 @@ Local testing environment for Kubernetes using Kind with Helm, the Argo ecosyste
 - [KubeRay](#kuberay)
 - [Tekton](#tekton)
 - [Redis](#redis)
+- [Knative](#knative)
+  - [Quickstart](#quickstart)
+  - [End to end](#end-to-end)
+  - [Send Review Comment to Broker](#send-review-comment-to-broker)
   
 # kubectl 
 
@@ -564,4 +568,193 @@ kubectl apply -f deployment/dev/redis/redis-service.yaml
 kubectl apply -f deployment/dev/redis/redis-ingress.yaml
 
 kubectl port-forward service/redis 6379
+```
+
+# Knative
+
+Add Knative:
+
+```
+# Serving
+kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.17.0/serving-crds.yaml
+kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.17.0/serving-core.yaml
+kubectl apply -f https://github.com/knative/net-kourier/releases/download/knative-v1.17.0/kourier.yaml
+kubectl patch configmap/config-network \
+  --namespace knative-serving \
+  --type merge \
+  --patch '{"data":{"ingress-class":"kourier.ingress.networking.knative.dev"}}'
+kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.17.0/serving-hpa.yaml
+
+# Eventing
+kubectl apply -f https://github.com/knative/eventing/releases/download/knative-v1.17.2/eventing-crds.yaml
+kubectl apply -f https://github.com/knative/eventing/releases/download/knative-v1.17.2/eventing-core.yaml
+# Kafka
+kubectl apply -f https://github.com/knative-extensions/eventing-kafka-broker/releases/download/knative-v1.17.1/eventing-kafka-controller.yaml
+kubectl apply -f https://github.com/knative-extensions/eventing-kafka-broker/releases/download/knative-v1.17.1/eventing-kafka-controller.yaml
+kubectl apply -f https://github.com/knative-extensions/eventing-kafka-broker/releases/download/knative-v1.17.1/eventing-kafka-controller.yaml
+
+# Configure magic DNS
+kubectl --namespace kourier-system get service kourier
+kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.17.0/serving-default-domain.yaml
+
+kubectl get pods -n knative-serving
+kubectl get pods -n knative-eventing
+```
+
+Add CLI tools:
+
+```
+# kn
+wget https://github.com/knative/client/releases/download/knative-v1.17.0/kn-linux-amd64
+sudo mv kn-linux-amd64 /usr/local/bin/kn
+sudo chmod +x /usr/local/bin/kn
+
+kn
+
+# func
+wget https://github.com/knative/func/releases/download/knative-v1.17.0/func_linux_amd64
+sudo mv func_linux_amd64 /usr/local/bin/func
+sudo chmod +x /usr/local/bin/func
+
+func version
+```
+
+## Quickstart
+
+Create a hello() function:
+
+```
+func create -l go hello
+
+export FUNC_REGISTRY=ghcr.io/... # You will need to change this
+
+cd hello
+func run --build
+func invoke
+```
+
+Deploy a Knative service:
+
+```
+kubectl create ns knative-operator
+kubectl apply -f deployment/dev/knative/hello.yaml
+
+kn service list
+
+echo "Accessing URL $(kn service describe hello -o url)"
+curl "$(kn service describe hello -o url)"
+
+kubectl get pod -l serving.knative.dev/service=hello -w
+```
+
+Revise the service:
+
+```
+kn service update hello \
+--env TARGET=Knative
+
+kn revisions list
+
+# Split traffic
+kn service update hello \
+--traffic hello-00001=50 \
+--traffic @latest=50
+kn revisions list
+```
+
+Create an event source:
+
+```
+kn service create cloudevents-player \
+--image quay.io/ruben/cloudevents-player:latest
+
+kn source binding create ce-player-binding --subject "Service:serving.knative.dev/v1:cloudevents-player" --sink broker:example-broker
+```
+
+Create trigger:
+
+```
+kn trigger create cloudevents-trigger --sink cloudevents-player  --broker example-broker
+```
+
+## End to end
+
+[View: https://knative.dev/docs/bookstore/page-0/welcome-knative-bookstore-tutorial/](https://knative.dev/docs/bookstore/page-0/welcome-knative-bookstore-tutorial/)
+
+Clone repo and spin up front end:
+
+```
+git clone https://github.com/knative/docs.git
+
+cd docs/code-samples/eventing/bookstore-sample-app/start
+kubectl apply -f frontend/config/100-front-end-deployment.yaml
+kubectl get pods
+
+kubectl port-forward svc/bookstore-frontend-svc 3000
+```
+
+Now the backend:
+
+```
+cd docs/code-samples/eventing/bookstore-sample-app/start
+kubectl apply -f node-server/config/100-deployment.yaml
+kubectl get pods
+
+kubectl port-forward svc/node-server-svc 8080:80
+```
+
+## Send Review Comment to Broker
+
+```
+kubectl apply -f deployment/dev/knative/200-broker.yaml 
+
+kubectl get brokers
+kubectl describe broker bookstore-broker
+
+kubectl apply -f deployment/dev/knative/300-sinkbinding.
+kubectl get sinkbindings
+
+kubectl apply -f deployment/dev/knative/100-event-display.yaml
+kubectl get pods
+
+kubectl apply -f deployment/dev/knative/200-log-trigger.yaml 
+kubectl get triggers
+
+kubectl logs -l=app=event-display -f
+```
+
+Create sentiment analysis function:
+
+```
+# func create -l python sentiment-analysis-app # See tutorial code
+cd sentiment-analysis-app
+func build -b=s2i -v
+func run -b=s2i -v
+
+# Simulate cloud event
+cd sentiment-analysis-app
+func invoke -f=cloudevent --data='{"reviewText": "I love Knative so much"}' --content-type=application/json --type="new-review-comment" -v
+
+func deploy -b=s2i -v
+
+kubectl get kservice
+func invoke -f=cloudevent --data='{"reviewText":"I love Knative so much"}' -v
+```
+
+Create a sequence:
+
+```
+kubectl apply -f deployment/dev/knative/100-create-sequence.yaml 
+kubectl get sequences
+
+kubectl apply -f deployment/dev/knative/200-create-trigger.yaml 
+kubectl get triggers
+```
+
+Create a database:
+
+```
+cd docs/code-samples/eventing/bookstore-sample-app/start
+kubectl apply -f db-service
+kubectl get pods
 ```

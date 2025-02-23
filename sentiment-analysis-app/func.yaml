@@ -1,0 +1,7 @@
+specVersion: 0.36.0
+name: sentiment-analysis-app
+runtime: python
+registry: ghcr.io/jbris
+created: 2025-02-23T23:12:36.921278262+13:00
+build:
+  builder: s2i
