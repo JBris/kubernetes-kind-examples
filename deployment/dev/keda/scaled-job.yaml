@@ -1,0 +1,38 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledJob
+metadata:
+  name: pi-job
+  namespace: default
+  annotations:
+    autoscaling.keda.sh/paused: "false"                       
+spec:
+  jobTargetRef:
+    parallelism: 3                            
+    completions: 1                            
+    activeDeadlineSeconds: 60               
+    backoffLimit: 3                           
+    template:
+      spec:
+        containers:
+        - name: pi
+          image: perl:5.34.0
+          command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(2000)"]
+  pollingInterval: 30                         
+  successfulJobsHistoryLimit: 5            
+  failedJobsHistoryLimit: 5                  
+  maxReplicaCount: 5                       
+  triggers:
+  - type: cron
+    metadata:
+      timezone: Pacific/Auckland # You may need to change this
+      start: 59 * * * *       
+      end: 05 * * * *         
+      desiredReplicas: "5"
+  - type: metrics-api
+    metadata:
+      targetValue: "1"
+      format: "json"
+      activationTargetValue: "1"
+      url: "https://api.github.com/repos/jbris/kubernetes-kind-examples"
+      valueLocation: "stargazers_count"
+      unsafeSsl: "true"

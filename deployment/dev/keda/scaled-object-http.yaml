@@ -1,0 +1,14 @@
+kind: HTTPScaledObject
+apiVersion: http.keda.sh/v1alpha1
+metadata:
+    name: nginx 
+spec:
+    host: "myhost.com"
+    targetPendingRequests: 1
+    scaleTargetRef:
+        deployment: nginx
+        service: nginx
+        port: 80
+    replicas:
+        min: 0
+        max: 3

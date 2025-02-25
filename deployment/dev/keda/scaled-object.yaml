@@ -1,0 +1,35 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: nginx-deployment
+  namespace: default
+spec:
+  scaleTargetRef:
+    apiVersion:    apps/v1         
+    kind:          Deployment    
+    name:          nginx      
+  pollingInterval:  5                 
+  cooldownPeriod:   300                 
+  minReplicaCount:  0           
+  maxReplicaCount:  5                    # Optional. Default: 100
+  fallback:                                       
+    failureThreshold: 3                             
+    replicas: 1                                    
+  advanced:                                        
+    restoreToOriginalReplicaCount: true     # Optional. Default: false
+    horizontalPodAutoscalerConfig:          
+      name: keda-hpa-nginx     
+      behavior:                            
+        scaleDown:
+          stabilizationWindowSeconds: 600
+          policies:
+            - type: Percent
+              value: 100
+              periodSeconds: 15
+  triggers:
+  - type: cron
+    metadata:
+      timezone: Pacific/Auckland # You may need to change this
+      start: 55 * * * *       
+      end: 59 * * * *         
+      desiredReplicas: "5"

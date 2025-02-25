@@ -33,6 +33,9 @@ Local testing environment for Kubernetes using Kind with Helm, the Argo ecosyste
   - [KServe Installation](#kserve-installation)
     - [Secure InferenceService with ServiceMesh](#secure-inferenceservice-with-servicemesh)
     - [KServe test run](#kserve-test-run)
+- [KEDA](#keda)
+  - [Scaled object](#scaled-object)
+  - [Scaled job](#scaled-job)
   
 # kubectl 
 
@@ -875,4 +878,71 @@ kubectl get svc istio-ingressgateway -n istio-system
 export INGRESS_HOST=worker-node-address # Change me based off external IP from above command
 INGRESS_GATEWAY_SERVICE=$(kubectl get svc --namespace istio-system --selector="app=istio-ingressgateway" --output jsonpath='{.items[0].metadata.name}')
 kubectl port-forward --namespace istio-system svc/${INGRESS_GATEWAY_SERVICE} 8080:80
+```
+
+# KEDA
+
+Add KEDA:
+
+```
+helm repo add kedacore https://kedacore.github.io/charts
+helm repo update
+helm install keda kedacore/keda --namespace keda --create-namespace
+helm install http-add-on kedacore/keda-add-ons-http --namespace keda
+
+kubectl get pod -n keda
+```
+
+Deploy NGINX:
+
+```
+kubectl apply -f deployment/dev/keda/nginx-deployment.yaml
+kubectl apply -f deployment/dev/keda/nginx-service.yaml 
+
+kubectl port-forward -n default service/nginx 8080:80
+```
+
+## Scaled object
+
+Apply scaled object:
+
+```
+kubectl apply -f deployment/dev/keda/scaled-object.yaml
+
+# After event has been triggered
+kubectl get pod
+kubectl get deployment
+
+# After complete
+kubectl delete scaledobject nginx-deployment
+```
+
+Apply scaled HTTP object:
+
+```
+kubectl apply -f deployment/dev/keda/scaled-object-http.yaml
+kubectl get svc -n keda
+
+kubectl port-forward svc/keda-add-ons-http-interceptor-proxy -n keda 32511:8080
+curl localhost:32511 -H 'Host: myhost.com'
+```
+
+## Scaled job
+
+Apply scaled job:
+
+```
+kubectl apply -f deployment/dev/keda/scaled-job.yaml
+
+kubectl get job
+kubectl get pod
+
+# After done
+kubectl delete scaledjob pi-job 
+```
+
+Get metrics:
+
+```
+kubectl get --raw "/apis/external.metrics.k8s.io/v1beta1"
 ```
