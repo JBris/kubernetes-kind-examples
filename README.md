@@ -13,6 +13,7 @@ Local testing environment for Kubernetes using Kind with Helm, the Argo ecosyste
 - [Add storage classes](#add-storage-classes)
 - [Sealed Secrets](#sealed-secrets)
 - [ArgoCD](#argocd)
+  - [ArgoCD apps](#argocd-apps)
 - [Argo Workflows](#argo-workflows)
 - [Argo Events](#argo-events)
 - [Argo Rollouts](#argo-rollouts)
@@ -150,6 +151,17 @@ kubectl get secret mysecret
 
 # ArgoCD
 
+Get CLI:
+
+```
+VERSION=$(curl -L -s https://raw.githubusercontent.com/argoproj/argo-cd/stable/VERSION)
+curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/download/v$VERSION/argocd-linux-amd64
+sudo install -m 555 argocd-linux-amd64 /usr/local/bin/argocd
+rm argocd-linux-amd64
+```
+
+Then deploy:
+
 ```
 kubectl create namespace argocd
 
@@ -157,16 +169,16 @@ kubectl get ns
 
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 
+kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}'
 kubectl get svc -n argocd
 
 # Port forwarding
 kubectl port-forward -n argocd service/argocd-server 8443:443
 ```
-
 Get admin password
 
 ```
-kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d && echo
+argocd admin initial-password -n argocd
 ```
 
 Default username for ArgoCD is admin.
@@ -175,6 +187,57 @@ Visit localhost:8443 on your web browser.
 
 ```
 xdg-open localhost:8443
+```
+
+## ArgoCD apps
+
+Creating Apps Via CLI:
+
+```
+argocd login localhost:8443
+
+kubectl config set-context --current --namespace=argocd
+argocd app create guestbook --repo https://github.com/argoproj/argocd-example-apps.git --path guestbook --dest-server https://kubernetes.default.svc --dest-namespace default
+
+argocd app get guestbook
+argocd app sync guestbook
+```
+
+Declarative approach:
+
+```
+kubectl apply -f deployment/dev/argo/kustomize-app.yaml 
+kubectl apply -f deployment/dev/argo/kustomize-guestbook.yaml 
+kubectl apply -f deployment/dev/argo/app-name.yaml 
+
+kubectl create ns test1
+kubectl apply -f deployment/dev/argo/applicationset-dns.yaml 
+```
+
+Declarative approach with Helm
+
+```
+kubectl apply -f deployment/dev/argo/sealed-secrets.yaml
+kubectl apply -f deployment/dev/argo/nginx-helm.yaml
+```
+
+Directory app:
+
+```
+kubectl apply -f deployment/dev/argo/guestbook.yaml
+```
+
+Multisource:
+
+```
+kubectl apply -f deployment/dev/argo/helm-multisource-yaml
+```
+
+Full example:
+
+```
+kubectl apply -f deployment/dev/argo/full-manifest.yaml 
+Warning: metadata.finalizers: "resources-finalizer.argocd.argoproj.io": prefer a domain-qualified finalizer name includin
 ```
 
 # Argo Workflows

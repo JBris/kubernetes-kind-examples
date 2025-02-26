@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: external-dns
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+  - clusters: {}
+  template:
+    metadata:
+      name: 'external-dns'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/kubernetes-sigs/external-dns/
+        targetRevision: v0.14.0
+        path: kustomize
+        kustomize:
+          patches:
+          - target:
+              kind: Deployment
+              name: external-dns
+            patch: |-
+              - op: add
+                path: /spec/template/spec/containers/0/args/3
+                value: --txt-owner-id={{.name}}   # patch using attribute from generator
+      destination:
+        name: 'in-cluster'
+        namespace: default
