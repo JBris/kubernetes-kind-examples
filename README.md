@@ -243,6 +243,10 @@ Multisource with NGINX:
 
 ```
 kubectl apply -f deployment/dev/argo/nginx-multisource.yaml
+
+kubectl port-forward --namespace=ingress-nginx  service/nginx-multisource-ingress-nginx-controller 8080:80
+
+curl -s -I -X GET localhost:8080 | grep -P "X-.*: true"
 ```
 
 # Argo Workflows
