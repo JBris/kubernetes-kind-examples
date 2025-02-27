@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nginx-multisource
+  annotations:
+    # argocd.argoproj.io/hook: Sync # For Job objects usually
+    argocd.argoproj.io/sync-options: Prune=confirm,Force=true,Replace=true
+    # argocd.argoproj.io/sync-wave: "1" # Resource sync order
+spec:
+  project: default
+  syncPolicy:
+    managedNamespaceMetadata:
+      annotations: 
+        name: nginx
+        type: ingress
+    syncOptions:
+    - CreateNamespace=true
+    - ApplyOutOfSyncOnly=false
+    - PrunePropagationPolicy=foreground
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ingress-nginx
+  sources:
+  - repoURL: 'https://kubernetes.github.io/ingress-nginx'
+    chart: ingress-nginx
+    targetRevision: 4.12.0
+    helm:
+      valueFiles:
+      - $values/deployment/dev/argo/nginx-values.yaml
+  - repoURL: 'https://github.com/JBris/kubernetes-kind-examples.git'
+    targetRevision: main
+    ref: values

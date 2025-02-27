@@ -237,7 +237,12 @@ Full example:
 
 ```
 kubectl apply -f deployment/dev/argo/full-manifest.yaml 
-Warning: metadata.finalizers: "resources-finalizer.argocd.argoproj.io": prefer a domain-qualified finalizer name includin
+```
+
+Multisource with NGINX:
+
+```
+kubectl apply -f deployment/dev/argo/nginx-multisource.yaml
 ```
 
 # Argo Workflows

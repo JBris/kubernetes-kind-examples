@@ -1,0 +1,7 @@
+controller:
+  proxySetHeaders:
+    X-Different-Name: "true"
+    X-Using-Nginx-Controller: "true"
+  addHeaders:
+    X-Different-Name: "true"
+    X-Using-Nginx-Controller: "true"
