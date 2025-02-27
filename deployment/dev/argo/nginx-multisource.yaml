@@ -5,7 +5,7 @@ metadata:
   annotations:
     # argocd.argoproj.io/hook: Sync # For Job objects usually
     argocd.argoproj.io/sync-options: Prune=confirm,Force=true,Replace=true
-    # argocd.argoproj.io/sync-wave: "1" # Resource sync order
+    # argocd.argoproj.io/sync-wave: "1" # Resource sync order. Apply to other manifests
 spec:
   project: default
   syncPolicy:
