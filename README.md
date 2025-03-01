@@ -10,6 +10,7 @@ Local testing environment for Kubernetes using Kind with Helm, the Argo ecosyste
 - [helm](#helm)
 - [kind](#kind)
 - [k9s](#k9s)
+- [Kubernetes dashboard](#kubernetes-dashboard)
 - [Add storage classes](#add-storage-classes)
 - [Sealed Secrets](#sealed-secrets)
 - [ArgoCD](#argocd)
@@ -110,6 +111,26 @@ rm k9s_linux_amd64.deb
 
 k9s help
 k9s -n default
+```
+
+# Kubernetes dashboard
+
+Add dashboard:
+
+```
+helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
+helm upgrade --install kubernetes-dashboard kubernetes-dashboard/kubernetes-dashboard --create-namespace --namespace kubernetes-dashboard
+
+kubectl apply -f deployment/dev/dashboard
+kubectl -n kubernetes-dashboard create token admin-user
+
+kubectl -n kubernetes-dashboard port-forward svc/kubernetes-dashboard-kong-proxy 8444:443
+```
+
+Visit localhost:8444 on your web browser.
+
+```
+xdg-open localhost:8444
 ```
 
 # Add storage classes
