@@ -24,7 +24,7 @@ Local testing environment for Kubernetes using Kind with Helm, the Argo ecosyste
 - [Test ML stack](#test-ml-stack)
 - [Volcano](#volcano)
 - [KubeRay](#kuberay)
-  - [ResNet example](#resnet-example)
+  - [Other examples](#other-examples)
 - [Tekton](#tekton)
 - [Redis](#redis)
 - [Knative](#knative)
@@ -602,7 +602,7 @@ kubectl apply -f https://raw.githubusercontent.com/ray-project/kuberay/master/ra
 kubectl logs -l=job-name=rayjob-sample
 ```
 
-## ResNet example
+## Other examples
 
 Setup (optional - may already be done)
 
@@ -617,17 +617,30 @@ helm install kuberay-operator kuberay/kuberay-operator --version 1.3.0
 
 # Create a Ray cluster
 # kubectl apply -f https://raw.githubusercontent.com/ray-project/ray/master/doc/source/cluster/kubernetes/configs/ray-cluster.gpu.yaml
-kubectl apply -f deployment/dev/kuberay/ray-cluster.gcpu.yaml
+kubectl apply -f deployment/dev/kuberay/ray-cluster.gpu.yaml
 
-kubectl port-forward services/raycluster-head-svc 8265
+kubectl port-forward services/raycluster-head-svc 8265 10001  
 ```
 
-Run the Python script:
+Run the Python scripts:
 
 ```
 poetry install --no-root
 poetry shell
+
+python deployment/dev/kuberay/square_submit.py
+```
+
+Run the ResNet script:
+
+```
 python deployment/dev/kuberay/pytorch_training_e2e_submit.py
+```
+
+Running scripts from Ray Client:
+
+```
+python deployment/dev/kuberay/square_client.py 
 ```
 
 # Tekton
