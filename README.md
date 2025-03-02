@@ -24,6 +24,7 @@ Local testing environment for Kubernetes using Kind with Helm, the Argo ecosyste
 - [Test ML stack](#test-ml-stack)
 - [Volcano](#volcano)
 - [KubeRay](#kuberay)
+  - [ResNet example](#resnet-example)
 - [Tekton](#tekton)
 - [Redis](#redis)
 - [Knative](#knative)
@@ -599,6 +600,34 @@ Use KubeRay with Modin:
 kubectl apply -f https://raw.githubusercontent.com/ray-project/kuberay/master/ray-operator/config/samples/ray-job.modin.yaml
 
 kubectl logs -l=job-name=rayjob-sample
+```
+
+## ResNet example
+
+Setup (optional - may already be done)
+
+```
+# NVIDIA
+kubectl apply -f https://raw.githubusercontent.com/GoogleCloudPlatform/container-engine-accelerators/master/nvidia-driver-installer/cos/daemonset-preloaded.yaml
+
+# Install both CRDs and KubeRay operator.
+helm repo add kuberay https://ray-project.github.io/kuberay-helm/
+helm repo update
+helm install kuberay-operator kuberay/kuberay-operator --version 1.3.0
+
+# Create a Ray cluster
+# kubectl apply -f https://raw.githubusercontent.com/ray-project/ray/master/doc/source/cluster/kubernetes/configs/ray-cluster.gpu.yaml
+kubectl apply -f deployment/dev/kuberay/ray-cluster.gcpu.yaml
+
+kubectl port-forward services/raycluster-head-svc 8265
+```
+
+Run the Python script:
+
+```
+poetry install --no-root
+poetry shell
+python deployment/dev/kuberay/pytorch_training_e2e_submit.py
 ```
 
 # Tekton
