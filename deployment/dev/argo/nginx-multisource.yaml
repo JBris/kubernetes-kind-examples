@@ -1,11 +1,13 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: nginx-multisource
+  name: nginx
   annotations:
-    # argocd.argoproj.io/hook: Sync # For Job objects usually
+    # argocd.argoproj.io/hook: Sync # For Job resource types usually
     argocd.argoproj.io/sync-options: Prune=confirm,Force=true,Replace=true
     # argocd.argoproj.io/sync-wave: "1" # Resource sync order. Apply to other manifests
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   syncPolicy:
