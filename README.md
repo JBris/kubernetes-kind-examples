@@ -640,7 +640,8 @@ python deployment/dev/kuberay/pytorch_training_e2e_submit.py
 Running scripts from Ray Client:
 
 ```
-python deployment/dev/kuberay/square_client.py 
+docker compose run --rm -it ray_client python -c "import ray; print('hello world')"
+docker compose run --rm -it ray_client python /kuberay/square_client.py
 ```
 
 # Tekton

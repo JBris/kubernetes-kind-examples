@@ -1,0 +1,6 @@
+services:
+  ray_client:
+    image: rayproject/ray-ml:2.2.0-cpu
+    network_mode: "host"
+    volumes:
+      - ./deployment/dev/kuberay/:/kuberay
