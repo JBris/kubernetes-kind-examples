@@ -494,6 +494,18 @@ Ping the endpoint:
 curl --resolve kuard.localdev.me:9500:127.0.0.1 http://kuard.localdev.me:9500
 ```
 
+# Jenkins
+
+Test that Jenkins can be deployed:
+
+```
+helm upgrade --install jenkins -n jenkins -f jenkins-values.yaml jenkinsci/jenkins --create-namespace
+
+kubectl port-forward -n jenkins service/jenkins 8080 
+```
+
+This can be deployed using ArgoCD too.
+
 # Argo Rollouts with NGINX
 
 Run the following commands to deploy:
