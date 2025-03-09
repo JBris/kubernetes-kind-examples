@@ -499,12 +499,22 @@ curl --resolve kuard.localdev.me:9500:127.0.0.1 http://kuard.localdev.me:9500
 Test that Jenkins can be deployed:
 
 ```
-helm upgrade --install jenkins -n jenkins -f jenkins-values.yaml jenkinsci/jenkins --create-namespace
+helm upgrade --install jenkins -n jenkins -f deployment/dev/jenkins/jenkins-values.yaml jenkinsci/jenkins --create-namespace
 
 kubectl port-forward -n jenkins service/jenkins 8080 
 ```
 
-This can be deployed using ArgoCD too.
+This can be deployed using ArgoCD too:
+
+```
+kubectl delete ns jenkins
+
+argocd admin initial-password -n argocd
+argocd login localhost:8443
+kubectl config set-context --current --namespace=argocd
+
+kubectl apply -f deployment/dev/jenkins/jenkins-multisource.yaml 
+```
 
 # Argo Rollouts with NGINX
 
