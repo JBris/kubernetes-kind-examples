@@ -2,6 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: nginx
+  namespace: argocd
   annotations:
     # argocd.argoproj.io/hook: Sync # For Job resource types usually
     argocd.argoproj.io/sync-options: Prune=confirm,Force=true,Replace=true
