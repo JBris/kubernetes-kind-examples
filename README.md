@@ -20,6 +20,7 @@ Local testing environment for Kubernetes using Kind with Helm, the Argo ecosyste
 - [Argo Rollouts](#argo-rollouts)
 - [NGINX Ingress Operator](#nginx-ingress-operator)
 - [Cert Manager](#cert-manager)
+- [Jenkins](#jenkins)
 - [Argo Rollouts with NGINX](#argo-rollouts-with-nginx)
 - [Test ML stack](#test-ml-stack)
 - [Volcano](#volcano)
